@@ -26,9 +26,9 @@ public class GUI extends JFrame {
     IO errorWriter = new IO();
     // panels
     private JPanel greetingPanel, mainPanel = new JPanel(), employeeTab,
-            employeePanel, hourlyEmpTab, salaryEmpTab,
+            employeePanel, employeeSearchPanel, hourlyEmpTab, salaryEmpTab,
             commissionEmpTab, productTab, productPanel, manufacturerPanel,
-            productSearchPanel, exitPanel;
+            productSearchPanel, exitPanel,salesTab,salesPanel,sales,salesSearchSubPanel;
     // tabs
     private JTabbedPane mainTabs, employeeTypeTab;
 
@@ -175,6 +175,8 @@ public class GUI extends JFrame {
     private JTable productSearchResults;
     private JScrollPane productSearchResultsScrollpane;
     
+    private SearchProductButtonListener searchProductListener = new SearchProductButtonListener();
+    
     private JButton 
             sRProductEditButton = new JButton("Edit"),
             sRProductDeleteButton = new JButton("Delete");
@@ -211,6 +213,7 @@ public class GUI extends JFrame {
     
     private JButton
             slManuSearchButton = new JButton ("Search");
+    private SearchManuButtonListener searchManuButtonListener = new SearchManuButtonListener(); 
     
     //right side
     private JTable manuSearchResults;
@@ -225,7 +228,7 @@ public class GUI extends JFrame {
     // buttons
     private JButton createHourlyEmployeeBtn, createSalaryEmployeeBtn,
             createCommEmployeeBtn, searchEmployeeBtn,
-            exitBtn;
+            exitBtn, addSalesBtn;
     
     
     //search area panel, removed into sub section for ease of coding.
@@ -316,12 +319,24 @@ public class GUI extends JFrame {
                 return false;               
         };
     };;
+    JTable saleResultsTable = new JTable() {
+        private static final long serialVersionUID = 1L;
+
+        public boolean isCellEditable(int row, int column) {                
+                return false;               
+        };
+    };
     
     private ListSelectionModel searchEmployeeListSelectionModel;
+    private ListSelectionModel searchProductListSelectionModel;
     private Employee[] employeeStorage;
     private Employee selectedEmployee; 
     JScrollPane searchResultsScrollTable; //accessor. 
     DefaultTableModel searchResultsDefaultTableModel; 
+    
+    SalesIdentity salesIdenity; 
+    DefaultTableModel saleResultsDefaultTableModel;
+    
     
     private ListSelectionModel manuListSelectionModel;
     private ManufacturerIdentity manuIdenity; 
@@ -358,11 +373,61 @@ public class GUI extends JFrame {
     
     private int empCreateGetIndexofTabPane;
     
+    //edit manufactuer panel popup setup
+    private JPanel
+            editManufacturerPanelMain = new JPanel(),
+                editManufacturerPanelup = new JPanel(),
+                editManufacturerPaneldown= new JPanel();
+    
+    private JButton editManuButton = new JButton("Submit to Database");
+    
+    private JLabel 
+            editManuNamelbl = new JLabel("Name: "),
+            editManuCountrylbl = new JLabel("Country: "),
+            editManuDescriptionlbl = new JLabel("Description: ");
+    
+    private JTextField 
+            editManuNameTxt = new JTextField(15),
+            editManuCountryTxt = new JTextField(15),
+            editManuDescriptioneTxt = new JTextField(15);
+    
+    //edit product information setup, 
+    private JPanel
+            editProductPaneMain = new JPanel(),
+                editProductPaneup = new JPanel(),
+                editProductPaneDown = new JPanel();
+    
+    private JLabel //chaning manufacturers makes no sense. 
+            editProductNamelbl = new JLabel("Name: "),
+            editProductPricelbl = new JLabel("Price: "),
+            editProductionCostlbl = new JLabel("Production Cost: "),
+            editProductRatinglbl = new JLabel("Rating: "),
+            editProductDescriptionlbl = new JLabel("Name: ");
+    
+    private JTextField
+            editProductNametxt = new JTextField(),
+            editProductPricetxt = new JTextField(),
+            editProductionCosttxt = new JTextField(),
+            editProductRatingtxt = new JTextField(),
+            editProductDescriptiontxt = new JTextField();
+    
+    private JButton editProductSubmitButton = new JButton("Submit");
+    
+    //
+    private JComboBox salesProductList = new JComboBox ();
+    private JComboBox salesEmp = new JComboBox ();
+    
+    
+    
+    
+
+                    
+    
     //buttons
     private JButton searchEmployees; //activates the search for the database. 
     //SimpleVectorTable SearchResultsVectors = new SimpleVectorTable(); //results holder object
     //listeners
-    SearchEmployeeButtonListener searchBtnListener;
+    SearchEmployeeButtonListener searchEmployeeButtonListener;
     
     //end of ben search initalization 
 
@@ -378,7 +443,7 @@ public class GUI extends JFrame {
         // set title layout and 
         super("Assignment 4 CRUD FOR FUN.");
         setLayout(new FlowLayout());
-
+        PullSalesValues(); 
         
         // create tabs
         mainTabs = new JTabbedPane();
@@ -392,14 +457,18 @@ public class GUI extends JFrame {
         this.CreateManufacturerProductMain();
         this.BuildProductSearchTab();
         this.buildManuSearchPanel();
+        this.BuildEditManufacturerPopupPanel(); //builds a popup for editing manufactuer. 
+        buildSalesTab();
 
+        buildEditProductPopupSetup();
         
 
         // add tabs
         mainTabs.addTab("Create an Employee", null, employeeTab, "Employee");
-        mainTabs.addTab("Products", null, productTab, "Products");
+        //mainTabs.addTab("Products", null, productTab, "Products");
         mainTabs.addTab("Search and Edit Employees", null, this.searchMainPanel, "Search Employees");
         mainTabs.addTab("Products & manufactuerers", this.ProductManufacturerCreateSearchMainPanel);
+        mainTabs.addTab("Employee Sales", null, this.salesTab,"Sales");
 
         // add subpanels to main panel
         mainPanel.setLayout(new BorderLayout());
@@ -438,10 +507,10 @@ public class GUI extends JFrame {
         
         //add searchButton for executing Queries. 
         this.searchEmployees = new JButton("Search DataBase for Employee");
-        this.searchBtnListener = new SearchEmployeeButtonListener(); 
-        this.searchEmployees.addActionListener(this.searchBtnListener);
+        this.searchEmployeeButtonListener = new SearchEmployeeButtonListener(); 
+        this.searchEmployees.addActionListener(this.searchEmployeeButtonListener);
         this.searchEmployees.doClick(); //force a click
-        this.searchResultsDefaultTableModel = searchBtnListener.returnMyTable();
+        this.searchResultsDefaultTableModel = searchEmployeeButtonListener.returnMyTable();
         //this.searchBtnListener.actionPerformed(new ActionEvent());
         this.searchCriteriaButtonsPanel.add(this.searchEmployees);
         
@@ -835,7 +904,7 @@ public class GUI extends JFrame {
     
     //creates the create product Tab
     private void CreateProductCreationPanel() {
-        pullManufacturerAndProductFromDB();
+        pullManufacturerAndProductFromDB(false);
         
         this.productCreatePanelMain.setLayout(new BorderLayout());
         this.productCreatePanelUp.setLayout(new GridLayout(0,2));
@@ -904,7 +973,7 @@ public class GUI extends JFrame {
         sProductSearchLeftUpPanel.add(slProductSearchDescriptionlbl);
         sProductSearchLeftUpPanel.add(slProductSearchDescriptionCheckBox);
         sProductSearchLeftUpPanel.add(slProductSearchDescriptionTxt);
-        
+        srProductSearchButton.addActionListener(searchProductListener);
         sProductSearchLeftDownPanel.add(srProductSearchButton);
         
         sProductSearchLeftPanel.add(sProductSearchLeftUpPanel,BorderLayout.NORTH);
@@ -929,16 +998,19 @@ public class GUI extends JFrame {
         
         sProductSearchRightUpPanel.add(productSearchResultsScrollpane);
         sRProductDeleteButton.addActionListener(new DeleteProductButtonListener());
-        
+        sRProductEditButton.addActionListener(new showUpdateProductWindow());
         
         sRProductEditButton.setEnabled(false);
         sRProductDeleteButton.setEnabled(false);
         
+        //new showUpdateProductWindow()
         sProductSearchRightDownPanel.add(sRProductEditButton);
         sProductSearchRightDownPanel.add(sRProductDeleteButton);
         
         sProductSearchRightPanel.add(sProductSearchRightUpPanel, BorderLayout.NORTH);
         sProductSearchRightPanel.add(sProductSearchRightDownPanel, BorderLayout.SOUTH);
+        
+        
 
         
         
@@ -946,7 +1018,9 @@ public class GUI extends JFrame {
     }
 
  
-    
+    /**
+     * builds the total manufactuerer search panel. 
+     */
     private void buildManuSearchPanel() {
         this.buildSearchManuLeftSide();
         this.buldSearchManuRightSide();
@@ -957,6 +1031,9 @@ public class GUI extends JFrame {
         sManuSearchMainPanel.add(sManutSearchLeftPanel, BorderLayout.WEST);
     }
     
+    /**
+     * builds the left sife of the search manufacturer
+     */
     private void buildSearchManuLeftSide() {
         sManutSearchLeftPanel.setLayout(new BorderLayout());
         sManuSearchLeftUpPanel.setLayout(new GridLayout (0,3));
@@ -978,6 +1055,7 @@ public class GUI extends JFrame {
         sManuSearchLeftUpPanel.add(slManuSearchDescriptionCheckBox);
         sManuSearchLeftUpPanel.add(slManuSearchDescriptionTxt);
         
+        slManuSearchButton.addActionListener(searchManuButtonListener);
         sManuSearchLeftDownPanel.add(slManuSearchButton);
         sManutSearchLeftPanel.add(sManuSearchLeftUpPanel, BorderLayout.NORTH);
         sManutSearchLeftPanel.add(sManuSearchLeftDownPanel, BorderLayout.SOUTH);
@@ -985,7 +1063,10 @@ public class GUI extends JFrame {
         
         
     }
-            
+    
+    /**
+     * builds the right side of the search manufacturer
+     */
     private void buldSearchManuRightSide() {
         sManuSearchRightPanel.setLayout(new BorderLayout());
         sManuSearchRightUpPanel.setLayout(new GridLayout(0,1));
@@ -1000,6 +1081,8 @@ public class GUI extends JFrame {
         this.manuSearchResultsScrollpane = new JScrollPane(manuSearchResults);
         sManuSearchRightUpPanel.add(manuSearchResultsScrollpane);
         sRPmanuDeleteButton.addActionListener(new DeleteManuButtonListener());
+        sRManuEditButton.addActionListener(new showUpdateManufacturerWindow());
+        //new showUpdateManufacturerWinodow()
         
         sRManuEditButton.setEnabled(false);
         sRPmanuDeleteButton.setEnabled(false);
@@ -1012,24 +1095,60 @@ public class GUI extends JFrame {
         sManuSearchRightPanel.add(sManuSearchRightUpPanel, BorderLayout.NORTH);
         sManuSearchRightPanel.add(sManuSearchRightDownPanel, BorderLayout.SOUTH);
         
-        
-        
-        
-        
-        
-        /*
-        sManuSearchRightUpPanel.add
-        
-        
-            private JTable manuSearchResults;
-    private JScrollPane manuSearchResultsScrollpane;
-    
-    private JButton 
-            sRManuEditButton = new JButton("Edit"),
-            sRPmanuDeleteButton = new JButton("Delete");
-        */
     }
         
+    
+    private void BuildEditManufacturerPopupPanel() {
+        editManufacturerPanelMain.setLayout(new BorderLayout());
+        editManufacturerPanelup.setLayout(new GridLayout(0,2));
+        editManufacturerPaneldown.setLayout(new GridLayout(0,1));
+        
+        editManufacturerPanelup.add(editManuNamelbl);
+        editManufacturerPanelup.add(editManuNameTxt);
+        editManufacturerPanelup.add(editManuCountrylbl);
+        editManufacturerPanelup.add(editManuCountryTxt);
+        editManufacturerPanelup.add(editManuDescriptionlbl);
+        editManufacturerPanelup.add(editManuDescriptioneTxt);
+        
+        //editManuButton.addActionListener();
+        //showUpdateManufacturerWinodow
+        editManufacturerPaneldown.add(editManuButton);
+        editManuButton.addActionListener(new UpdateManuMenuButtonListener());
+        
+        editManufacturerPanelMain.add(editManufacturerPanelup, BorderLayout.NORTH);
+        editManufacturerPanelMain.add(editManufacturerPaneldown, BorderLayout.SOUTH);
+        
+        
+                
+                
+    }
+    /**
+     * Builds the product popup. 
+     */
+    private void buildEditProductPopupSetup () {
+        editProductPaneMain.setLayout(new BorderLayout());
+        editProductPaneup.setLayout(new GridLayout(0,2));
+        editProductPaneDown.setLayout(new GridLayout(0,1));
+        editProductPaneup.add(editProductNamelbl);
+        editProductPaneup.add(editProductNametxt);
+        editProductPaneup.add(editProductPricelbl);
+        editProductPaneup.add(editProductPricetxt);
+        editProductPaneup.add(editProductionCostlbl);
+        editProductPaneup.add(editProductionCosttxt);
+        editProductPaneup.add(editProductRatinglbl);
+        editProductPaneup.add(editProductRatingtxt);
+        editProductPaneup.add(editProductDescriptionlbl);
+        editProductPaneup.add(editProductDescriptiontxt);
+        
+        editProductSubmitButton.addActionListener(new UpdateProdMenuButtonListener());
+        editProductPaneDown.add(editProductSubmitButton);
+        
+        editProductPaneMain.add(editProductPaneup, BorderLayout.NORTH);
+        editProductPaneMain.add(editProductPaneDown, BorderLayout.SOUTH);
+        
+        
+        
+    }
 
     
     // build bottom panel with exit button
@@ -1040,9 +1159,111 @@ public class GUI extends JFrame {
         exitPanel.add(exitBtn);
     }
 
+    /**
+     * Creates the search criteria for a product
+     * @param setupFlag
+     * @return 
+     */
+     private String[] createProductSearchCriteria (int setupFlag)  {
+        ArrayList<String> temp = new ArrayList<String>();
+        
+        if (this.slProductSearchIDCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add(this.slProductSearchIDTxt.getText());
+            } 
+            else if (setupFlag == 2) {
+                temp.add("ID");
+            }
+        }
+        if (this.slProductSearchNameCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add("'"+this.slProductSearchNameTxt.getText()+"'");
+            } 
+            else if (setupFlag == 2) {
+                temp.add("name");
+            }
+        }
+        if (this.slProductSearchPriceCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add(this.slProductSearchPriceTxt.getText());
+            } 
+            else if (setupFlag == 2) {
+                temp.add("Price");
+            }
+        }
+        if (this.slProductSearchProductionCostCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add(this.slProductSearchProductionCostTxt.getText());
+            } 
+            else if (setupFlag == 2) {
+                temp.add("productionCost");
+            }
+        }
+        if (this.slProductSearchRatingCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add(this.slProductSearchRatingTxt.getText());
+            } 
+            else if (setupFlag == 2) {
+                temp.add("rating");
+            }
+        }
+        if (this.slProductSearchDescriptionCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add("'"+this.slProductSearchDescriptionTxt.getText());
+            } 
+            else if (setupFlag == 2) {
+                temp.add("rating");
+            }
+        }
+        
+        String[] returnValue = temp.toArray(new String[temp.size()]);
+        return returnValue;
+     }
     
-    
-    
+     /**
+      * Creates the search criteria for searching a manufacturer
+      * @param setupFlag
+      * @return 
+      */
+     private String[] createManufacturerSearchCriteria (int setupFlag){
+         ArrayList<String> temp = new ArrayList<String>();
+        
+        if (this.slManuSearchIDCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add("'"+this.slManuSearchIDTxt.getText()+"'");
+            } 
+            else if (setupFlag == 2) {
+                temp.add("ID");
+            }
+        }
+        if (this.slManuSearchNameCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add("'"+this.slManuSearchNameTxt.getText()+"'");
+            } 
+            else if (setupFlag == 2) {
+                temp.add("Name");
+            }
+        }
+        if (this.slManuSearchCountryCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add("'"+this.slManuSearchCountryTxt.getText()+"'");
+            } 
+            else if (setupFlag == 2) {
+                temp.add("Country");
+            }
+        }
+        if (this.slManuSearchDescriptionCheckBox.isSelected() == true) {
+            if (setupFlag == 1) {
+                temp.add("'"+this.slManuSearchDescriptionTxt.getText()+"'");
+            } 
+            else if (setupFlag == 2) {
+                temp.add("Description");
+            }
+        }
+        String[] returnValue = temp.toArray(new String[temp.size()]);
+        
+        return returnValue;
+     }
     
     /**
      * Sets up either a search criteria of values (1), or sections (2) 
@@ -1064,7 +1285,7 @@ public class GUI extends JFrame {
         //comboBox.getSelectedItem().toString()
         if (this.searchEmpTypeSelectedCheckBo.isSelected() == true) {
             if (setupFlag == 1) {
-                temp.add(this.searchEmpTypeComboBox.toString());
+                temp.add(String.valueOf(this.searchEmpTypeComboBox.getSelectedIndex()));
             } 
             else if (setupFlag == 2) {
                 temp.add("EmpType");
@@ -1248,6 +1469,9 @@ public class GUI extends JFrame {
         this.searchEmployees.doClick();//and do it again to prevent errors. 
     }
 
+    /**
+     * calls the methods to delete a manufacturer
+     */
     private void deleteManufacturer() {
         int Delete = this.manuStorage[this.manuSearchResults.getSelectedRow()].getManufacturerID();
         //this.employeeStorage[0];
@@ -1266,6 +1490,9 @@ public class GUI extends JFrame {
         //this.slManuSearchButton.doClick();//and do it again to prevent errors. 
     }
     
+    /**
+     * calls the methods to delete a product
+     */
     private void deleleteProduct() {
         int Delete = this.prodStorage[this.productSearchResults.getSelectedRow()].getProductID();
         DBConnection conn = new DBConnection(); 
@@ -1281,6 +1508,8 @@ public class GUI extends JFrame {
         };
         //this.srProductSearchButton.doClick();//and do it again to prevent errors. 
     }
+    
+    
     
     /**
      * Isolated return for values. 
@@ -1309,11 +1538,11 @@ public class GUI extends JFrame {
         return empIden;
     }
     /**
-     * Updates the values in the held object
+     * Updates the values in the held object and readies it to be written. 
      */
-    private void updateEmployee() {
+    private void updateEmployeeStoredEmployee() {
         try {
-        selectedEmployee.setSinNumber(Integer.getInteger(searchEDITSinTextBox.getText()));
+            selectedEmployee.setSinNumber(Integer.getInteger(searchEDITSinTextBox.getText()));
         } catch (Exception e) {} //does not need to be thrown, but required for code
         selectedEmployee.setFirstName(searchEDITFirstNameTextBox.getText());
         selectedEmployee.setLastName(searchEDITLastNameTextBox.getText());
@@ -1324,6 +1553,74 @@ public class GUI extends JFrame {
         selectedEmployee.setAddress(searchEDITAddressTextBox.getText());
         DBUpdateEmployee();
     }
+    
+    
+    /**
+     * Updates the values in the held manufacturer value from
+     * the text fields and updates the 
+     */
+    private void updateStoredManufactuter() {
+        manuSelected.setName(editManuNameTxt.getText());
+        manuSelected.setCountry(editManuCountryTxt.getText());
+        manuSelected.setDescription(editManuDescriptioneTxt.getText());
+        DBUpdateManufacturer(); 
+    }
+    /**
+     * grabs the values for updating the products by passing them into 
+     * the current product object. 
+     */
+    private void updateStoredProducts() {
+        if(updateStoredProductsValidate()) {
+            prodSelected.setName(this.editProductNametxt.getText());
+            prodSelected.setPrice(Double.parseDouble(this.editProductPricetxt.getText()));
+            prodSelected.setRating(Double.parseDouble(this.editProductRatingtxt.getText()));
+            prodSelected.setProductionCost(Double.parseDouble(this.editProductionCosttxt.getText()));
+            prodSelected.setDescription(this.editManuDescriptioneTxt.getText());
+            DBUpdateProduct();
+        }
+        
+    }
+    /**
+     * validates the inputs of the update product tab. 
+     * @return 
+     */
+    private boolean updateStoredProductsValidate() {
+        if (this.DoubleTryParse(this.editProductPricetxt.getText()) && 
+                this.DoubleTryParse(this.editProductRatingtxt.getText())&&
+                this.DoubleTryParse(this.editProductionCosttxt.getText()))
+        {
+            return true;
+        }
+        
+        
+        return false;
+        
+    }
+    
+    /**
+     * Submits the new product informaton to the DB. 
+     */
+    public void DBUpdateProduct() {
+        DBConnection conn = new DBConnection();
+        conn.updateSQLDataBase("gc200325005.Products", "name",prodSelected.getName(), "ID", prodSelected.getManuID());
+        conn.updateSQLDataBase("gc200325005.Products", "description", prodSelected.getDescription(), "ID", prodSelected.getManuID());
+        conn.updateSQLDataBase("gc200325005.Products", "rating",String.valueOf(prodSelected.getRating()), "ID", prodSelected.getManuID());
+        conn.updateSQLDataBase("gc200325005.Products", "price", String.valueOf(prodSelected.getPrice()), "ID", prodSelected.getManuID());
+        conn.updateSQLDataBase("gc200325005.Products", "productionCost", String.valueOf(prodSelected.getProductionCost()), "ID", prodSelected.getManuID());
+        
+    }
+    
+    
+    //updates the manufacturer to the server. 
+    public void  DBUpdateManufacturer() {
+        DBConnection conn = new DBConnection();
+        
+        conn.updateSQLDataBase("gc200325005.Manufacturers", "Name", "'"+manuSelected.getName()+"'", "ID", manuSelected.getManufacturerID());
+        conn.updateSQLDataBase("gc200325005.Manufacturers", "country", "'"+manuSelected.getCountry()+"'", "ID", manuSelected.getManufacturerID());
+        conn.updateSQLDataBase("gc200325005.Manufacturers", "description", "'"+manuSelected.getDescription()+"'", "ID", manuSelected.getManufacturerID());
+        updateManufacturerAndProductFromDB();
+    }
+    
     /**
      * Simply way of updating the DB, puts the stored values into the array for update.
      */
@@ -1342,7 +1639,7 @@ public class GUI extends JFrame {
     
         //pulls and sets the identities and updates the combo box with the apropriate 
         //values for creating a new product or manufacturer. 
-    private void pullManufacturerAndProductFromDB() {
+    private void pullManufacturerAndProductFromDB(boolean AfterFirstRun) {
      DBConnection conn = new DBConnection(); 
         this.manuIdenity = conn.getManufacturerInformation("SELECT * FROM gc200325005.Manufacturers;");
         this.manuStorage = this.manuIdenity.getManuArrayReturn();
@@ -1352,6 +1649,16 @@ public class GUI extends JFrame {
         this.prodIdentity = conn.getProductInformation("SELECT * FROM gc200325005.Products;");
         this.prodStorage = prodIdentity.getProdArrayReturn();
         this.prodTblModel = prodIdentity.getProdTable();
+        
+        if (AfterFirstRun) {
+            manuListSelectionModel = manuSearchResults.getSelectionModel();
+            manuListSelectionModel.addListSelectionListener(new selectManutTableListener());
+            manuSearchResults.setSelectionModel(manuListSelectionModel);
+
+            prodListSelectionModel = productSearchResults.getSelectionModel();
+            prodListSelectionModel.addListSelectionListener(new selectProductTableListener());
+            productSearchResults.setSelectionModel(prodListSelectionModel);
+        }
 
         for (int k = 0; k< manuStorage.length; k++){
             this.manuComboBox.addItem(this.manuStorage[k].getName());
@@ -1365,7 +1672,7 @@ public class GUI extends JFrame {
 
     //used to update the tables of product and manufacturer after crud operations
     private void updateManufacturerAndProductFromDB() {
-        pullManufacturerAndProductFromDB();
+        pullManufacturerAndProductFromDB(true);
         this.manuSearchResults.setModel(this.manuTblModel);
         this.productSearchResults.setModel(this.prodTblModel);
     }
@@ -1389,7 +1696,7 @@ public class GUI extends JFrame {
             if (JOptionPane.showConfirmDialog(null, "Doing this action delete the product, are you sure?", 
                     "Delete?", JOptionPane.YES_NO_OPTION) == 0) {
                 deleleteProduct(); 
-                
+                prodSelectedInt = 0;
            }
         }
     }
@@ -1403,24 +1710,121 @@ public class GUI extends JFrame {
             if (JOptionPane.showConfirmDialog(null, "Doing this action will also delete all products related to this manufacturer in the products table, are you sure?", 
                     "Delete?", JOptionPane.YES_NO_OPTION) == 0) {
                 deleteManufacturer();
-                
+                ManuSelectedInt = 0;
            }
         }
     }
+    
+    /**
+     * action listener class to perform the search actios
+     */
+    private class SearchManuButtonListener implements ActionListener 
+    {
 
+        private ManufacturerIdentity mymanufacturerIdentity;
+        @Override
+        public void actionPerformed(ActionEvent event) 
+        {
+            /*
+                private ListSelectionModel manuListSelectionModel;
+    private ManufacturerIdentity manuIdenity; 
+    private Manufacturer[] manuStorage;
+    private int ManuSelectedInt = 0;
+    private Manufacturer manuSelected;
+    private DefaultTableModel manuTblModel;
+            */
+
+            try {
+                    //System.out.println("Hey I did fucking shit!");
+                    DBConnection Conn = new DBConnection(); 
+                    mymanufacturerIdentity = Conn.getManufacturerInformation(searchSetup(createManufacturerSearchCriteria(2), 
+                            createManufacturerSearchCriteria(1), "gc200325005.Manufacturers"));
+
+                    manuSearchResults.setModel(mymanufacturerIdentity.getManuTable());
+                    manuStorage = mymanufacturerIdentity.getManuArrayReturn();
+                    System.out.println("Size of Current employeeStorage array: "+ employeeStorage.length);
+
+            }catch (Exception e) {
+                //errorWriter.writeError(e);
+                System.out.println("Error!");
+                System.out.println(e.getMessage());
+                errorWriter.appendToFile("Error! " + e.getMessage());
+            }
+            searchEmpEditButton.setEnabled(false);
+            
+        }
+        /**
+         * 
+         * @return the table model for the search results if needed. 
+         */
+        public ManufacturerIdentity returnMyIdentiy() {
+            return mymanufacturerIdentity;
+        } 
+        
+    }
+    
+    private class SearchProductButtonListener implements ActionListener 
+    {
+
+        private ProductIdentity myProdIdenity;
+
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            //call and execute the query 
+            
+            
+                try {
+                    System.out.println("Reached Product Search:");
+                    //System.out.println("Hey I did fucking shit!");
+                    DBConnection Conn = new DBConnection(); 
+                    this.myProdIdenity = Conn.getProductInformation(searchSetup(createProductSearchCriteria(2),
+                            createProductSearchCriteria(1), "gc200325005.Products"));
+                    
+                    
+
+                    productSearchResults.setModel(myProdIdenity.getProdTable()); 
+                    prodStorage = myProdIdenity.getProdArrayReturn();
+                    System.out.println("Size of Current product array: "+ prodStorage.length);
+
+                    
+            }catch (Exception e) {
+                //errorWriter.writeError(e);
+                System.out.println("Error!");
+                System.out.println(e.getMessage());
+                errorWriter.appendToFile("Error! " + e.getMessage());
+            }
+            sRProductEditButton.setEnabled(false);
+            sRProductDeleteButton.setEnabled(false);
+            
+        }
+        
+        public ProductIdentity getProdIdenity() {
+            return myProdIdenity;
+        }
+        
+    }
+    
+    
     //listener for the selection of the manufacture table row
     private class selectManutTableListener implements ListSelectionListener {
         @Override
         public void valueChanged(ListSelectionEvent event) {
         
+
+            try {
                 ManuSelectedInt = manuSearchResults.getSelectedRow();
                 System.out.println("Select manufacturer Table Index: " + ManuSelectedInt);
                 sRManuEditButton.setEnabled(true);
                 sRPmanuDeleteButton.setEnabled(true);
+                manuSelected = manuStorage[ManuSelectedInt];
+            } catch (Exception e) {
+                //this catch is is caused by the new model being passed in, it is not
+                // true ERROR, just the way the table listener recongizes data changes.
+            }
 
         }
     }
-    
+
 
 
     //listener for the selection of the product table row
@@ -1428,16 +1832,18 @@ public class GUI extends JFrame {
         @Override
         public void valueChanged(ListSelectionEvent event) { 
         
+            try {
                 prodSelectedInt = productSearchResults.getSelectedRow();
                 System.out.println("Select product Table Index: " + prodSelectedInt);
-
                 sRProductEditButton.setEnabled(true);
                 sRProductDeleteButton.setEnabled(true);
+                prodSelected = prodStorage[prodSelectedInt];
+            }catch (Exception e) {
+            //an index out of bounds happens due to a change that this causes to the 
+            //listener and table changes. 
+            }
         }
     }
-     
-
-
 
      /*
      * Listens for changes in the selection of the rows of the Jtable and allows
@@ -1446,10 +1852,15 @@ public class GUI extends JFrame {
     private class empJTableListSelectionListener implements ListSelectionListener {
         @Override
         public void valueChanged(ListSelectionEvent event) {
+            try {
             System.out.println("This is Done: " + searchResultsTable.getSelectedRow());
             selectedEmployee = employeeStorage[searchResultsTable.getSelectedRow()];
             System.out.println(selectedEmployee.getStatus());
             searchEmpEditButton.setEnabled(true);
+            }catch(Exception e) {
+                //index out of bounds happens here, it's not an error, just 
+                //a problem with the listener and JTable never playing nice.
+            }
 
         }
     }
@@ -1460,16 +1871,16 @@ public class GUI extends JFrame {
     private class SelectForEditListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent event) {
-             EditWindow editWindow = new EditWindow();
+             EditEmpWindow editWindow = new EditEmpWindow();
              editWindow.setVisible(true);
         }
     }
     /**
      * Creates a temp pop up for editing, non blocking. 
      */
-    private class EditWindow extends JFrame {
+    private class EditEmpWindow extends JFrame {
         
-        public EditWindow() {
+        public EditEmpWindow() {
             //searchEDITEmpIDTextBox.setText(selectedEmployee.get
             searchEDITFirstNameTextBox.setText(selectedEmployee.getFirstName());
             searchEDITLastNameTextBox .setText(selectedEmployee.getLastName());
@@ -1488,15 +1899,69 @@ public class GUI extends JFrame {
     }
     
     /**
+     * edit manufactuerer window. 
+     */
+    private class EditManufacturerWindow extends JFrame {
+        
+        public EditManufacturerWindow() {
+
+            editManuNameTxt.setText(manuSelected.getName());
+            editManuCountryTxt.setText(manuSelected.getCountry());
+            editManuDescriptioneTxt.setText(manuSelected.getDescription());
+            
+            this.add(editManufacturerPanelMain);
+            this.pack();
+        }
+    }
+    /**
+     * Creates the edit product window
+     */
+    private class EditProductWindow extends JFrame {
+       public EditProductWindow () {
+        
+           editProductNametxt.setText(prodSelected.getName());
+           editProductPricetxt.setText(String.valueOf(prodSelected.getPrice()));
+           editProductionCosttxt.setText(String.valueOf(prodSelected.getCostVSProductionCost()));
+           editProductDescriptiontxt.setText(prodSelected.getDescription());
+           this.add(editProductPaneMain);
+           
+           this.pack();
+           
+       }
+        //editProductPaneMain
+    }
+    
+    /**
      * listens for calls on the update button. 
      */
     private class UpdateEmployeeButtonListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent event) {
-            updateEmployee();
+            updateEmployeeStoredEmployee();
             
         }
     } 
+    
+    //calls the update manufacturer event
+    private class UpdateManuMenuButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            updateStoredManufactuter();
+            
+        }
+    }
+    
+    private class UpdateProdMenuButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            if (JOptionPane.showConfirmDialog(null, "Are you sure?", "Update?", JOptionPane.YES_NO_OPTION) == 0) {
+                updateStoredProducts();
+            }
+            
+        }
+    }
+          
+
     
     /**
      * listens for call on the delete button. 
@@ -1519,7 +1984,8 @@ public class GUI extends JFrame {
          */
 
         private EmployeesIdentity empIden;
- //action listener's table
+        //action listener's table
+       
         @Override
         public void actionPerformed(ActionEvent event) {
             //call and execute the query 
@@ -1565,6 +2031,27 @@ public class GUI extends JFrame {
         }
     }
     
+    //EditManufacturerWindow
+  private class showUpdateProductWindow implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            EditProductWindow editProdWindow = new EditProductWindow();
+            
+            editProdWindow.setVisible(true);
+        }
+    }
+    
+    
+    private class showUpdateManufacturerWindow implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            EditManufacturerWindow editManuWindow = new EditManufacturerWindow();
+            
+            
+            //fdsgsafrhfha
+            editManuWindow.setVisible(true);
+        }
+    }
 
         //validates date inputes 
         public boolean checkValidDate (String Date) 
@@ -1595,7 +2082,7 @@ public class GUI extends JFrame {
             }  
         }
                 //as the C# try parse int method. 
-        private boolean tryDoubleInt(String value) 
+        private boolean DoubleTryParse(String value) 
         {
             try {  
                 Double.parseDouble(value);  
@@ -1658,9 +2145,9 @@ public class GUI extends JFrame {
         public boolean validateInputTabe (int Tab) {
             if (empCreateGetIndexofTabPane == 0)
             {
-                if(     this.tryDoubleInt(this.hourRateTxt.getText())
+                if(     this.DoubleTryParse(this.hourRateTxt.getText())
                         &&
-                        this.tryDoubleInt(this.hoursTxt.getText())) {
+                        this.DoubleTryParse(this.hoursTxt.getText())) {
                     return true;
                     
                 }
@@ -1670,7 +2157,7 @@ public class GUI extends JFrame {
                 }
             } else if (empCreateGetIndexofTabPane == 1)
             {
-                if(     this.tryDoubleInt(this.baseSalaryTxt.getText())){
+                if(     this.DoubleTryParse(this.baseSalaryTxt.getText())){
                     return true;
                     
                 }
@@ -1680,11 +2167,11 @@ public class GUI extends JFrame {
                 }
             } else if (empCreateGetIndexofTabPane == 2)
             {
-                if(     this.tryDoubleInt(this.salesTxt.getText())
+                if(     this.DoubleTryParse(this.salesTxt.getText())
                         &&
-                        this.tryDoubleInt(this.commissionRateTxt.getText())
+                        this.DoubleTryParse(this.commissionRateTxt.getText())
                         &&
-                        this.tryDoubleInt(this.baseSalaryTxt.getText())
+                        this.DoubleTryParse(this.baseSalaryTxt.getText())
                         ) {
                     return true;
                 }
@@ -1787,7 +2274,7 @@ public class GUI extends JFrame {
         @Override
         public void actionPerformed(ActionEvent event) {
             submitNewProduct();
-            pullManufacturerAndProductFromDB();
+            pullManufacturerAndProductFromDB(true);
         }
     }
     //event to submit a new manufacturer
@@ -1795,9 +2282,10 @@ public class GUI extends JFrame {
 
         @Override
         public void actionPerformed(ActionEvent event) {
-            submitNewManufacturer();
-            pullManufacturerAndProductFromDB(); //to update the product field
-            
+            if (JOptionPane.showConfirmDialog(null, "Are you sure?", "Exit?", JOptionPane.YES_NO_OPTION) == 0) {
+                submitNewManufacturer();
+                pullManufacturerAndProductFromDB(true); //to update the product field
+            } 
         }
     }
     
@@ -1838,7 +2326,7 @@ public class GUI extends JFrame {
             JOptionPane.showMessageDialog(null,"All Products Must have a name, price, product cost and rating! (Manufacture should be set as well to the prefered value)","Submission Error",JOptionPane.WARNING_MESSAGE);
             return false; 
         }
-        if (!this.tryDoubleInt(this.prodCreatePriceTxt.getText()) || !this.tryDoubleInt(this.prodCreateProductionCostTxt.getText())) {
+        if (!this.DoubleTryParse(this.prodCreatePriceTxt.getText()) || !this.DoubleTryParse(this.prodCreateProductionCostTxt.getText())) {
             JOptionPane.showMessageDialog(null,"All values in the Price and productcost field must be valid money values!","Submission Error",JOptionPane.WARNING_MESSAGE);
             return false; 
         }
@@ -1851,5 +2339,97 @@ public class GUI extends JFrame {
     }
     
     
+    //salestab 
+    //labels
+    private JLabel salesCommLbl,salesProductLbl,salesEmpLbl;
+    //text box
+    //private JTextField salesCommTxt = new JTextField();
+    private void buildSalesTab() {
+        salesTab = new JPanel();
+        salesTab.setLayout(new BorderLayout());
+        saleResultsTable = new JTable(this.saleResultsDefaultTableModel);
+        
+        salesPanel = new JPanel();
+        salesPanel.setLayout(new GridLayout(5,1));
+        salesPanel.setBorder(BorderFactory.createTitledBorder("Add new Sale"));
+        
+        salesSearchSubPanel = new JPanel();
+        
+        addSalesBtn = new JButton("Add sale");
+        addSalesBtn.addActionListener(new addSaleBtnListener());
+        salesProductLbl = new JLabel("Choose Product");
+        salesEmpLbl = new JLabel("Choose Employee");
+        // NEED TO PULL DATA FROM DB TO THAT LISTS
+        //salesProductList = new JComboBox<String>();
+        //salesEmp = new JComboBox<String>();
+        
+        salesCommLbl = new JLabel("Sale commission");
+        //salesCommTxt = new JTextField(5);
+        //salesCommTxt.setEditable(false);
+        saleResultsTable.setModel(this.saleResultsDefaultTableModel);
+        searchProductListSelectionModel = saleResultsTable.getSelectionModel();
+        saleResultsTable.setSelectionModel(searchProductListSelectionModel);
+                
+                
+        //this.searchResultsTable = new JTable(this.searchResultsDefaultTableModel);
+        this.saleResultsTable.setSize(300, 800);
+        
+            try {
+            //placed inline as this is merely setup. 
+                for (int i = 1; i <= (saleResultsTable.getColumnCount()); i++) 
+                {
+                    saleResultsTable.getColumn(i).setPreferredWidth(150);
+                } 
+            }
+            catch (Exception e ) {
+                System.out.println(e.getMessage());
+                errorWriter.appendToFile("Packing issue: " + e.getMessage());
+                //errorWriter.writeError(e);
+            }
+            
+
+            
+            
+        this.saleResultsTable.doLayout(); //auto adusts the table. 
+        
+        System.out.println(this.saleResultsDefaultTableModel.getDataVector().size());
+        this.buildSearchPanelSelection();
+        //add the components to the results set panel
+        this.searchResultsScrollTable = new JScrollPane(this.saleResultsTable); 
+        
+        
+        this.searchResultsPanel.add(this.searchResultsScrollTable, BorderLayout.NORTH);
+        //this.searchResultsPanel.add(this.searchEditMainMain, BorderLayout.CENTER);
+        salesPanel.add(salesProductLbl);
+        salesPanel.add(salesEmpLbl);
+        salesPanel.add(salesCommLbl);
+        salesPanel.add(salesProductList);
+        salesPanel.add(salesEmpLbl);
+        salesPanel.add(salesEmp);
+        //salesPanel.add(salesCommLbl);
+        //salesPanel.add(salesCommTxt);
+        
+        salesSearchSubPanel.add(addSalesBtn);
+        
+        salesTab.add(salesPanel, BorderLayout.CENTER);
+        salesTab.add(salesSearchSubPanel, BorderLayout.SOUTH);
+    }
+    
+    
+        private class addSaleBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+                   
+            
+                PullSalesValues();
+                }
+        }
+        
+        private void PullSalesValues () {
+            DBConnection conn = new DBConnection();
+            salesIdenity = conn.getSalesInformation("SELECT * FROM gc200325005.FINALSALES;");
+            saleResultsDefaultTableModel = salesIdenity.getSalesTable();
+
+        }
     
 }

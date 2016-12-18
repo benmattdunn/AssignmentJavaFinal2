@@ -6,6 +6,7 @@ import HRPackage.*;
 import IO.IO;
 import Manufacturers.Manufacturer;
 import Products.Product;
+import Sales.SalesObject;
 import Session.Session;
 import java.sql.*;
 import java.util.ArrayList;
@@ -104,6 +105,16 @@ public class DBConnection {
                         +tempTable.getColumnCount());
                 buildEmployeeArray(tempTable);
                 return new EmployeesIdentity(buildEmployeeArray(tempTable),tempTable );    
+    }
+    
+    public SalesIdentity getSalesInformation (String salesTableQuery) {
+        DefaultTableModel tempTable; //initialize place holder
+                tempTable = querySQLDataBase(salesTableQuery); //set variable
+                System.out.println("Sales: "
+                        + "\n The Table Size for creating the EMP obects: "
+                        +tempTable.getColumnCount());
+                buildEmployeeArray(tempTable);
+                return new SalesIdentity(this.buildSalesArray(tempTable),tempTable );    
     }
     
     
@@ -641,6 +652,32 @@ public class DBConnection {
     return products.toArray(new Product[products.size()]);//return the arrayu. 
     }
     
+    //Creates the sales array
+    public SalesObject[] buildSalesArray (DefaultTableModel salesTable) {
+        ArrayList<SalesObject> salesObjects = new ArrayList<SalesObject>();
+        int EMPID = 0;
+        String salesPersonFullName = "";
+        int ProductID = 0;
+        String ProductName = "";
+        double SaleValue = 0.0;
+        
+        try{
+            for (int i = 0; i<= salesTable.getRowCount()-1;i++)  
+            {
+                EMPID = Integer.parseInt(salesTable.getValueAt(i, 0).toString());
+                salesPersonFullName = salesTable.getValueAt(i, 1).toString();
+                ProductID = Integer.parseInt(salesTable.getValueAt(i, 2).toString());
+                ProductName  = salesTable.getValueAt(i, 3).toString();
+                SaleValue = Double.parseDouble(salesTable.getValueAt(i, 4).toString());
+                
+                salesObjects.add(new SalesObject(EMPID, salesPersonFullName, ProductID, ProductName, SaleValue));
+            }
+        }
+        catch(Exception e) 
+        {
+        }
+        return salesObjects.toArray(new SalesObject[salesObjects.size()]);//return the arrayu. 
+    }
 
     
 

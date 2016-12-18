@@ -1,12 +1,10 @@
 package GUI;
-
 import DB.DBConnection;
 import Session.Session;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import javax.swing.*;
 import java.awt.event.ActionListener;
-
 public class LoginGUI extends JFrame {
     DBConnection dbConnectionHandler;  //session holder, was not static. 
     
@@ -46,7 +44,7 @@ public class LoginGUI extends JFrame {
         btnLogin.addActionListener(loginButtonActionListener);
         
         JButton btnExit = new JButton("Exit");
-        
+        btnExit.addActionListener(new ExitButtonListener());
         // add components to login panel
         loginPanel.add(lblUserName);
         loginPanel.add(txtUserName);
@@ -77,10 +75,13 @@ public class LoginGUI extends JFrame {
             }
         }
     }
-    
-    
-    
-    
-    
-    
+    private class ExitButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            // are you sure box
+            if (JOptionPane.showConfirmDialog(null, "Are you sure?", "Exit?", JOptionPane.YES_NO_OPTION) == 0) {
+                System.exit(0);
+            }
+        }
+    }  
 }
