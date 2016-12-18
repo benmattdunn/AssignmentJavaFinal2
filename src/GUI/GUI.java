@@ -28,7 +28,8 @@ public class GUI extends JFrame {
     private JPanel greetingPanel, mainPanel = new JPanel(), employeeTab,
             employeePanel, employeeSearchPanel, hourlyEmpTab, salaryEmpTab,
             commissionEmpTab, productTab, productPanel, manufacturerPanel,
-            productSearchPanel, exitPanel,salesTab,salesPanel,sales,salesSearchSubPanel;
+            productSearchPanel, exitPanel,salesTab,salesPanel,sales,salesSearchSubPanel,
+            SalesResultsPanel;
     // tabs
     private JTabbedPane mainTabs, employeeTypeTab;
 
@@ -332,6 +333,8 @@ public class GUI extends JFrame {
     private Employee[] employeeStorage;
     private Employee selectedEmployee; 
     JScrollPane searchResultsScrollTable; //accessor. 
+    
+    JScrollPane salesResultsScrollTable;
     DefaultTableModel searchResultsDefaultTableModel; 
     
     SalesIdentity salesIdenity; 
@@ -417,9 +420,9 @@ public class GUI extends JFrame {
     private JComboBox salesProductList = new JComboBox ();
     private JComboBox salesEmp = new JComboBox ();
     
+    private JScrollPane SalesResultsScrollPane;
     
-    
-    
+    private Session thisSession;
 
                     
     
@@ -439,9 +442,11 @@ public class GUI extends JFrame {
 
     // interface constructor
     public GUI(Session session) {
+       
 
         // set title layout and 
         super("Assignment 4 CRUD FOR FUN.");
+         thisSession = session;
         setLayout(new FlowLayout());
         PullSalesValues(); 
         
@@ -477,6 +482,19 @@ public class GUI extends JFrame {
         mainPanel.add(exitPanel, BorderLayout.SOUTH);
 
         add(mainPanel);
+        
+        //Lastly disable buttons not used in the seassion
+            sRProductEditButton.setVisible(this.thisSession.isAdminStatus());
+            sRProductDeleteButton.setVisible(this.thisSession.isAdminStatus());
+
+            sRManuEditButton.setVisible(this.thisSession.isAdminStatus());
+            sRPmanuDeleteButton.setVisible(this.thisSession.isAdminStatus());;
+    
+            searchEmpEditButton.setVisible(this.thisSession.isAdminStatus());
+            searchEmpDeleteButton.setVisible(this.thisSession.isAdminStatus());
+            searchEmpSubmitEditButton.setVisible(this.thisSession.isAdminStatus());
+        
+        
         
         // prevent resize. 
         this.pack();
@@ -1460,6 +1478,7 @@ public class GUI extends JFrame {
         try {
             conn.deleteSQLDataBase("gc200325005.Employee","EmpID", Delete);
             this.searchEmployees.doClick(); //force and update through an event click
+            updateAddSalesButtonComboBozes();
             
         } catch(Exception e)
         {
@@ -1500,6 +1519,7 @@ public class GUI extends JFrame {
             conn.deleteSQLDataBase("gc200325005.Products","ID", Delete); //delete the tied in products to prevent errors in DB
             updateManufacturerAndProductFromDB();
             //this.srProductSearchButton.doClick(); //force and update through an event click
+            updateAddSalesButtonComboBozes();
             
         } catch(Exception e)
         {
@@ -1526,6 +1546,7 @@ public class GUI extends JFrame {
                     searchResultsTable.setModel(empIden.getEmpTable());
                     employeeStorage = empIden.getEmpArrayReturn();
                     System.out.println("Size of Current employeeStorage array: "+ employeeStorage.length);
+                    updateAddSalesButtonComboBozes();
 
             }catch (Exception e) {
                 //errorWriter.writeError(e);
@@ -1543,7 +1564,7 @@ public class GUI extends JFrame {
     private void updateEmployeeStoredEmployee() {
         try {
             selectedEmployee.setSinNumber(Integer.getInteger(searchEDITSinTextBox.getText()));
-        } catch (Exception e) {} //does not need to be thrown, but required for code
+        } catch (Exception e) {errorWriter.appendToFile("Error: " + e.getMessage());} //does not need to be thrown, but required for code
         selectedEmployee.setFirstName(searchEDITFirstNameTextBox.getText());
         selectedEmployee.setLastName(searchEDITLastNameTextBox.getText());
         selectedEmployee.setPosition(searchEDITPositionTextBox.getText());
@@ -1552,6 +1573,7 @@ public class GUI extends JFrame {
         selectedEmployee.setPhoneNumber(searchEDITPhoneTextBox.getText());
         selectedEmployee.setAddress(searchEDITAddressTextBox.getText());
         DBUpdateEmployee();
+        updateAddSalesButtonComboBozes();
     }
     
     
@@ -1577,6 +1599,7 @@ public class GUI extends JFrame {
             prodSelected.setProductionCost(Double.parseDouble(this.editProductionCosttxt.getText()));
             prodSelected.setDescription(this.editManuDescriptioneTxt.getText());
             DBUpdateProduct();
+            updateAddSalesButtonComboBozes();
         }
         
     }
@@ -1820,6 +1843,7 @@ public class GUI extends JFrame {
             } catch (Exception e) {
                 //this catch is is caused by the new model being passed in, it is not
                 // true ERROR, just the way the table listener recongizes data changes.
+                //no true error happens here!
             }
 
         }
@@ -1999,6 +2023,7 @@ public class GUI extends JFrame {
                     searchResultsTable.setModel(empIden.getEmpTable());
                     employeeStorage = empIden.getEmpArrayReturn();
                     System.out.println("Size of Current employeeStorage array: "+ employeeStorage.length);
+                    updateAddSalesButtonComboBozes();
 
             }catch (Exception e) {
                 //errorWriter.writeError(e);
@@ -2078,6 +2103,7 @@ public class GUI extends JFrame {
             return true;  
         
             } catch (NumberFormatException e) {  
+                //no true error happens here.
             return false;  
             }  
         }
@@ -2089,7 +2115,7 @@ public class GUI extends JFrame {
             return true;  
         
             } catch (NumberFormatException e) {
-                
+                //no true error happens here.
             return false;  
             }  
         }
@@ -2347,58 +2373,44 @@ public class GUI extends JFrame {
     private void buildSalesTab() {
         salesTab = new JPanel();
         salesTab.setLayout(new BorderLayout());
+        this.SalesResultsPanel = new JPanel();
         saleResultsTable = new JTable(this.saleResultsDefaultTableModel);
+        //saleResultsTable.setModel(this.saleResultsDefaultTableModel);
+        updateAddSalesButtonComboBozes(); 
+        salesResultsScrollTable = new JScrollPane(saleResultsTable);
         
         salesPanel = new JPanel();
         salesPanel.setLayout(new GridLayout(5,1));
         salesPanel.setBorder(BorderFactory.createTitledBorder("Add new Sale"));
         
         salesSearchSubPanel = new JPanel();
-        
         addSalesBtn = new JButton("Add sale");
         addSalesBtn.addActionListener(new addSaleBtnListener());
+        salesSearchSubPanel.add(addSalesBtn);
+ 
+        
+        
         salesProductLbl = new JLabel("Choose Product");
         salesEmpLbl = new JLabel("Choose Employee");
-        // NEED TO PULL DATA FROM DB TO THAT LISTS
-        //salesProductList = new JComboBox<String>();
-        //salesEmp = new JComboBox<String>();
-        
         salesCommLbl = new JLabel("Sale commission");
         //salesCommTxt = new JTextField(5);
         //salesCommTxt.setEditable(false);
-        saleResultsTable.setModel(this.saleResultsDefaultTableModel);
-        searchProductListSelectionModel = saleResultsTable.getSelectionModel();
-        saleResultsTable.setSelectionModel(searchProductListSelectionModel);
-                
-                
-        //this.searchResultsTable = new JTable(this.searchResultsDefaultTableModel);
-        this.saleResultsTable.setSize(300, 800);
         
-            try {
-            //placed inline as this is merely setup. 
-                for (int i = 1; i <= (saleResultsTable.getColumnCount()); i++) 
-                {
-                    saleResultsTable.getColumn(i).setPreferredWidth(150);
-                } 
-            }
-            catch (Exception e ) {
-                System.out.println(e.getMessage());
-                errorWriter.appendToFile("Packing issue: " + e.getMessage());
-                //errorWriter.writeError(e);
-            }
+
+                
             
 
-            
-            
-        this.saleResultsTable.doLayout(); //auto adusts the table. 
+        
+        //this.saleResultsTable.doLayout(); //auto adusts the table. 
         
         System.out.println(this.saleResultsDefaultTableModel.getDataVector().size());
         this.buildSearchPanelSelection();
         //add the components to the results set panel
-        this.searchResultsScrollTable = new JScrollPane(this.saleResultsTable); 
+        //this.salesResultsScrollTable = new JScrollPane(this.saleResultsTable); 
         
         
-        this.searchResultsPanel.add(this.searchResultsScrollTable, BorderLayout.NORTH);
+        
+        SalesResultsPanel.add(salesResultsScrollTable);
         //this.searchResultsPanel.add(this.searchEditMainMain, BorderLayout.CENTER);
         salesPanel.add(salesProductLbl);
         salesPanel.add(salesEmpLbl);
@@ -2406,11 +2418,12 @@ public class GUI extends JFrame {
         salesPanel.add(salesProductList);
         salesPanel.add(salesEmpLbl);
         salesPanel.add(salesEmp);
+        
         //salesPanel.add(salesCommLbl);
         //salesPanel.add(salesCommTxt);
         
-        salesSearchSubPanel.add(addSalesBtn);
         
+        salesTab.add(SalesResultsPanel, BorderLayout.EAST);
         salesTab.add(salesPanel, BorderLayout.CENTER);
         salesTab.add(salesSearchSubPanel, BorderLayout.SOUTH);
     }
@@ -2419,17 +2432,49 @@ public class GUI extends JFrame {
         private class addSaleBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent event) {
-                   
-            
-                PullSalesValues();
-                }
+            //InsertSaleIntoDB(); 
+            InserSaleIntoDB();
+            PullSalesValues();
+            }
+        }
+
+        //due to the simplicity of inserting a sale, this code 
+        // simply creates the informatin. 
+        private void InserSaleIntoDB (){
+            String insertStatement 
+                    ="(EMPID, SALESPERSONFULLNAME, PRODUCTID, PRODUCTNAME, SALEVALUE) " +
+                    "VALUES (" + this.employeeStorage[this.salesEmp.getSelectedIndex()].getEmpId()+",'" 
+                    + this.employeeStorage[this.salesEmp.getSelectedIndex()].getFullName() + "',"
+                    + this.prodStorage[this.salesProductList.getSelectedIndex()].getProductID() + ",'"
+                    + this.prodStorage[this.salesProductList.getSelectedIndex()].getName() + "',"
+                    + this.prodStorage[this.salesProductList.getSelectedIndex()].getCostVSProductionCost() + ");";
+                    
+            DBConnection conn = new DBConnection();
+            conn.insertSQLDataBase("gc200325005.FINALSALES", insertStatement);
+        }
+        
+         /**
+         * updates the combo boxes on data changes to the employee or
+         * product information. 
+         */
+        private void updateAddSalesButtonComboBozes () {
+                    //salesProductList = new JComboBox<String>();
+                    //salesEmp = new JComboBox<String>();
+                    
+            for (int k =0; k < this.prodStorage.length; k++)
+            {
+                salesProductList.addItem(prodStorage[k].getName());
+            }
+            for (int k=0; k< this.employeeStorage.length;k++){
+                salesEmp.addItem(employeeStorage[k].getFirstName());
+            }
         }
         
         private void PullSalesValues () {
             DBConnection conn = new DBConnection();
             salesIdenity = conn.getSalesInformation("SELECT * FROM gc200325005.FINALSALES;");
             saleResultsDefaultTableModel = salesIdenity.getSalesTable();
-
+            saleResultsTable.setModel(salesIdenity.getSalesTable());
         }
     
 }
